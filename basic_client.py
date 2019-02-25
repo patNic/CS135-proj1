@@ -1,6 +1,7 @@
 import socket
 import sys
 import select
+import utils
 
 message = None
 
@@ -39,14 +40,14 @@ def main(argv):
 
 def run(client):
     s = client.get_socket()
-    client.send("/name"+client.name)
+    sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
+    sys.stdout.flush()
 
     while 1:
         socket_list = [sys.stdin, s]
          
         # Get the list sockets which are readable
         ready_to_read,ready_to_write,in_error = select.select(socket_list , [], [])
-         
         for sock in ready_to_read:
             if sock == s:
                 # incoming message from remote server, s
@@ -55,10 +56,16 @@ def run(client):
                     print '\nDisconnected from chat server'
                     sys.exit()
                 else:
-                    #print data
-                    sys.stdout.write(data)
-                    sys.stdout.write('[Me] ');
+                    sys.stdout.write(utils.CLIENT_WIPE_ME)
                     sys.stdout.flush()
+
+                    sys.stdout.write(data)
+                    sys.stdout.flush()
+
+                    sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
+                    sys.stdout.flush()
+
+
             else:
                 # user entered a message
                 send_request(client)
@@ -74,10 +81,10 @@ def send_request(client):
     elif msg.startswith("/join"):
         msg = msg.replace("/join", "/join[" + client.name + "]")
 
-    client.send(msg)
-            
-    sys.stdout.write('[Me] ');
+    sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
     sys.stdout.flush()
+
+    client.send(msg)
     return
 
 if __name__ == '__main__':main( sys.argv[1:2])

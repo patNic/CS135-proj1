@@ -62,7 +62,7 @@ def server(host, port):
                             join = request.replace("/join", "")
                             name = join[join.index("["):join.index("]")+1]
                             print name
-                            join = join.replace(name+" ", "").replace("\n", "")
+                            join = join.replace(name, "").replace(" ", "").replace("\n", "")
                             joinChannel(join, sock, name)
                         else:
                             broadcast(request, sock)
@@ -103,7 +103,7 @@ def determine_channel(socket):
 def sendLists(socket):
     response = '\n'.join(list_of_channel_names)
     try :
-        socket.send(response)
+        socket.send(response+"\n")
     except :
         # broken socket connection
         socket.close()
