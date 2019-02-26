@@ -51,8 +51,10 @@ def main(argv):
 
 def run(client):
     s = client.get_socket()
+
     sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
     sys.stdout.flush()
+
     while 1:
         socket_list = [sys.stdin, s]
          
@@ -62,22 +64,29 @@ def run(client):
         for sock in ready_to_read:
             if sock == s:
                 # incoming message from remote server, s
-                data = sock.recv(1024)
+                data = sock.recv(200)
                 if not data:
                     error_message = utils.CLIENT_SERVER_DISCONNECTED.format(client.get_address(), client.get_port())
                     print error_message
                     sys.exit()
                 else:
                     #print data
-                    sys.stdout.write(data)
-                    sys.stdout.write('[Me] ');
+                    sys.stdout.write(utils.CLIENT_WIPE_ME)
+                    sys.stdout.write(data+"\n")
+                    sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
                     sys.stdout.flush()
             else:
                 # user entered a message
                 send_request(client)
-                
              
     return
+
+
+def pad_message(message):
+  while len(message) < utils.MESSAGE_LENGTH:
+    message += " "
+  return message[:utils.MESSAGE_LENGTH]
+
 
 def send_request(client):
     msg = sys.stdin.readline()
@@ -90,7 +99,7 @@ def send_request(client):
     sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)
     sys.stdout.flush()
 
-    client.send(msg)
+    client.send(pad_message(msg))
 
     return
 

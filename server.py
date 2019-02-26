@@ -1,8 +1,4 @@
-'''
-Created on 4 Feb 2019
 
-@author: Kaye
-'''
 import sys
 import socket
 import select
@@ -47,8 +43,13 @@ def server(host, port):
                 SOCKET_LIST.append(sockfd)
             else:
                 try:
-                    request = sock.recv(1024)
-                  
+                    request = sock.recv(200)
+
+                    while len(request) != utils.MESSAGE_LENGTH and len(request) > 0:
+                        request = request + sock.recv(utils.MESSAGE_LENGTH - len(request))
+                        print len(request)
+
+                    request = request.strip()
                     if request:
                         if request.startswith("/list"):
                             sendLists(sock)
@@ -62,18 +63,21 @@ def server(host, port):
                             createChannel(channel, sock, name)
                         elif request.startswith("/join"):
                             join = request.replace("/join", "")
-                            name = join[join.index("["):join.index("]")+1]
-                            print name
-                            join = join.replace(name, "").replace(" ", "").replace("\n", "")
+                            name = ''
+
+                            if "[" in join and "]" in join:
+                                name = join[join.index("["):join.index("]")+1]
+                                join = join.replace(name, "").replace("\n", "")
+
+                            join = join.strip()
                             joinChannel(join, sock, name)
                         else:
-                            
                             if handle_request_exceptions(request, sock):
                                 broadcast(request, sock, False, False)
                     else:
-                        # remove the socket that's broken  
-                        print "at remove socket"  
-                        
+                        # remove the socket that's broken
+                        print "[INFO] A client was disconnected ..."
+
                         if sock in SOCKET_LIST:
                             broadcast(request, sock, True, True)
                             SOCKET_LIST.remove(sock)
@@ -83,22 +87,35 @@ def server(host, port):
     server_socket.close()             
     return
 
+
 def broadcast(message, socket, bool, is_client_down):
-    
+
     sender_details = determine_channel(socket)
-    members = sender_details[0]
-    
-    if is_client_down:
-        client_name = sender_details[1]
-        message = utils.SERVER_CLIENT_LEFT_CHANNEL.format(client_name[1:len(client_name)-1]) + "\n"
-    if members != None:
-        for client in members:
-            if(client != socket):
-                if bool:
-                    client.send(message)
-                else:
-                    client.send(sender_details[1] + ":" + message)
+
+    if sender_details != None:
+        members = sender_details[0]
+
+        if is_client_down:
+            client_name = sender_details[1]
+            message = utils.SERVER_CLIENT_LEFT_CHANNEL.format(client_name[1:len(client_name)-1]) + "\n"
+        if members != None:
+            for client in members:
+                if(client != socket):
+                    if bool:
+                        client.send(message)
+                    else:
+                        client.send(sender_details[1] + ":" + message)
     return
+
+def check_if_in_channel(sock):
+    for channel in list_of_channels:
+        members = channel.get_clients()
+
+        if sock in members:
+            return [True, channel]
+
+    return [False, None]
+
 
 def send_message_specific_client(message, socket):
     try :
@@ -110,6 +127,7 @@ def send_message_specific_client(message, socket):
         if socket in SOCKET_LIST:
             SOCKET_LIST.remove(socket)
     return
+
 
 def determine_channel(socket):
     for channel in list_of_channels:
@@ -124,9 +142,12 @@ def determine_channel(socket):
 
 def sendLists(socket):
     print "[INFO] A client is asking for the list of channels ... "
-    response = '\n'.join(list_of_channel_names)
+    response = '\n    '.join(list_of_channel_names)
     try :
-        socket.send(response+"\n")
+        if len(list_of_channel_names) > 0:
+            socket.send(response)
+        else:
+            socket.send(response)
     except :
         # broken socket connection
         socket.close()
@@ -146,15 +167,34 @@ def createChannel(channel_name, socket, name):
             error_message = utils.SERVER_CHANNEL_EXISTS.format(channel_name)
             send_message_specific_client(error_message+"\n", socket)
         else:
+            previous_channel = check_if_in_channel(socket)
+            if previous_channel[0]:
+                transfer_to_new_channel(socket, previous_channel[1])
+
             print "[INFO] New channel created: " + channel_name
             new_channel = Channel(channel_name, [socket], [name])
             list_of_channels.append(new_channel)
             list_of_channel_names.append(new_channel.get_name())
-        
+
     return
-    
+
+
+def transfer_to_new_channel(socket, channel):
+    ind = channel.get_clients().index(socket)
+    channel.get_clients().remove(socket)
+    name1 = channel.get_chat_mates()[ind]
+    channel.get_chat_mates().remove(name1)
+
+    for client in channel.get_clients():
+        client.send(utils.SERVER_CLIENT_LEFT_CHANNEL.format(name1[1:len(name1) - 1]) + "\n")
+
+
 def joinChannel(channel_name, socket, name):
     is_channel_exists = False
+    previous_channel = check_if_in_channel(socket)
+    if previous_channel[0]:
+        transfer_to_new_channel(socket, previous_channel[1])
+
     for channel in list_of_channels:
         if channel.get_name() == channel_name:
             channel.add_client(socket, name)
@@ -174,14 +214,14 @@ def handle_join_exceptions(channel_name, socket, name):
         error_message = utils.SERVER_JOIN_REQUIRES_ARGUMENT
     else:
        
-        error_message = utils.SERVER_NO_CHANNEL_EXISTS.format(channel_name[:len(channel_name)-1])  
+        error_message = utils.SERVER_NO_CHANNEL_EXISTS.format(channel_name[:len(channel_name)])
     send_message_specific_client(error_message+"\n", socket)  
     
     return
 
 def handle_request_exceptions(request, sock):
     if request.startswith("/"):
-        error_message = utils.SERVER_INVALID_CONTROL_MESSAGE.format(request[:len(request)-1])
+        error_message = utils.SERVER_INVALID_CONTROL_MESSAGE.format(request[:len(request)])
         send_message_specific_client(error_message+"\n", sock)
         return False
     else:
