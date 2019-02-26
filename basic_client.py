@@ -26,7 +26,7 @@ class BasicClient(object):
         self.socket.send(message)
     
     def recv(self):
-        response = self.socket.recv(1024)
+        response = self.socket.recv(200)
         return response
     
     def get_socket(self):

@@ -104,7 +104,7 @@ def broadcast(message, socket, bool, is_client_down):
                     if bool:
                         client.send(message)
                     else:
-                        client.send(sender_details[1] + ":" + message)
+                        client.send(sender_details[1] + " " + message)
     return
 
 def check_if_in_channel(sock):
