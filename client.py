@@ -65,12 +65,14 @@ def run(client):
             if sock == s:
                 # incoming message from remote server, s
                 data = sock.recv(200)
+
                 if not data:
                     error_message = utils.CLIENT_SERVER_DISCONNECTED.format(client.get_address(), client.get_port())
                     print error_message
                     sys.exit()
                 else:
                     #print data
+                    data = data.strip()
                     sys.stdout.write(utils.CLIENT_WIPE_ME)
                     sys.stdout.write(data+"\n")
                     sys.stdout.write(utils.CLIENT_MESSAGE_PREFIX)

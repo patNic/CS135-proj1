@@ -21,8 +21,8 @@ class SimpleTest():
         # Give the server time to come up.
         time.sleep(SLEEP_SECONDS)
 
-        self.alice_client = Popen(["python", "basic_client.py", "Alice", host, str(port)], stdin=PIPE, stdout=PIPE)
-        self.kay_client = Popen(["python", "basic_client.py", "Kay", host, str(port)], stdin=PIPE, stdout=PIPE)
+        self.alice_client = Popen(["python", "client.py", "Alice", host, str(port)], stdin=PIPE, stdout=PIPE)
+        self.kay_client = Popen(["python", "client.py", "Kay", host, str(port)], stdin=PIPE, stdout=PIPE)
         time.sleep(SLEEP_SECONDS)
 
     def tear_down(self):
