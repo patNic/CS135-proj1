@@ -3,8 +3,6 @@ import sys
 import socket
 import select
 import utils    
-import fcntl
-import struct
 
 list_of_channels = []
 list_of_channel_names = []
@@ -28,12 +26,11 @@ def server(port):
     print "[INFO] Server waiting for connections ..."
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host_name = socket.gethostname()
-    host = get_ip_address('wifi0')
-    print "host: "+host + " name: "+host_name
+   
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((host, port))
+    server_socket.bind(('', port))
     server_socket.listen(10)
+    
  
     # add server socket object to the list of readable connections
     SOCKET_LIST.append(server_socket)
@@ -94,14 +91,6 @@ def server(port):
      
     server_socket.close()             
     return
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
 
 
 def broadcast(message, socket, bool, is_client_down):
