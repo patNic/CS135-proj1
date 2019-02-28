@@ -135,7 +135,7 @@ def send_message_specific_client(message, socket):
         # broken socket connection
         socket.close()
         # broken socket, remove it
-        if sock in SOCKET_LIST:
+        if socket in SOCKET_LIST:
             #broadcast(request, sock, True, True)
             previous_channel = check_if_in_channel(sock)
             if(previous_channel[0]):
